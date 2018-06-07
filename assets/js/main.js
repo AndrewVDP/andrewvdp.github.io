@@ -1,248 +1,165 @@
 /*
-	Helios by HTML5 UP
+	Solid State by HTML5 UP
 	html5up.net | @ajlkn
 	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
 */
 
 (function($) {
 
-	var settings = {
-
-		// Carousels
-			carousels: {
-				speed: 4,
-				fadeIn: true,
-				fadeDelay: 250
-			},
-
-	};
+	"use strict";
 
 	skel.breakpoints({
-		wide: '(max-width: 1680px)',
-		normal: '(max-width: 1280px)',
-		narrow: '(max-width: 960px)',
-		narrower: '(max-width: 840px)',
-		mobile: '(max-width: 736px)'
+		xlarge:	'(max-width: 1680px)',
+		large:	'(max-width: 1280px)',
+		medium:	'(max-width: 980px)',
+		small:	'(max-width: 736px)',
+		xsmall:	'(max-width: 480px)'
 	});
 
 	$(function() {
 
 		var	$window = $(window),
-			$body = $('body');
+			$body = $('body'),
+			$header = $('#header'),
+			$banner = $('#banner');
 
 		// Disable animations/transitions until the page has loaded.
 			$body.addClass('is-loading');
 
 			$window.on('load', function() {
-				$body.removeClass('is-loading');
+				window.setTimeout(function() {
+					$body.removeClass('is-loading');
+				}, 100);
 			});
-
-		// CSS polyfills (IE<9).
-			if (skel.vars.IEVersion < 9)
-				$(':last-child').addClass('last-child');
 
 		// Fix: Placeholder polyfill.
 			$('form').placeholder();
 
-		// Prioritize "important" elements on mobile.
-			skel.on('+mobile -mobile', function() {
+		// Prioritize "important" elements on medium.
+			skel.on('+medium -medium', function() {
 				$.prioritize(
-					'.important\\28 mobile\\29',
-					skel.breakpoint('mobile').active
+					'.important\\28 medium\\29',
+					skel.breakpoint('medium').active
 				);
 			});
 
-		// Dropdowns.
-			$('#nav > ul').dropotron({
-				mode: 'fade',
-				speed: 350,
-				noOpenerFade: true,
-				alignment: 'center'
-			});
+		// Header.
+			if (skel.vars.IEVersion < 9)
+				$header.removeClass('alt');
 
-		// Scrolly links.
-			$('.scrolly').scrolly();
+			if ($banner.length > 0
+			&&	$header.hasClass('alt')) {
 
-		// Off-Canvas Navigation.
+				$window.on('resize', function() { $window.trigger('scroll'); });
 
-			// Navigation Button.
-				$(
-					'<div id="navButton">' +
-						'<a href="#navPanel" class="toggle"></a>' +
-					'</div>'
-				)
-					.appendTo($body);
+				$banner.scrollex({
+					bottom:		$header.outerHeight(),
+					terminate:	function() { $header.removeClass('alt'); },
+					enter:		function() { $header.addClass('alt'); },
+					leave:		function() { $header.removeClass('alt'); }
+				});
 
-			// Navigation Panel.
-				$(
-					'<div id="navPanel">' +
-						'<nav>' +
-							$('#nav').navList() +
-						'</nav>' +
-					'</div>'
-				)
-					.appendTo($body)
-					.panel({
-						delay: 500,
-						hideOnClick: true,
-						hideOnSwipe: true,
-						resetScroll: true,
-						resetForms: true,
-						target: $body,
-						visibleClass: 'navPanel-visible'
-					});
+			}
 
-			// Fix: Remove navPanel transitions on WP<10 (poor/buggy performance).
-				if (skel.vars.os == 'wp' && skel.vars.osVersion < 10)
-					$('#navButton, #navPanel, #page-wrapper')
-						.css('transition', 'none');
+		// Menu.
+			var $menu = $('#menu');
 
-		// Carousels.
-			$('.carousel').each(function() {
+			$menu._locked = false;
 
-				var	$t = $(this),
-					$forward = $('<span class="forward"></span>'),
-					$backward = $('<span class="backward"></span>'),
-					$reel = $t.children('.reel'),
-					$items = $reel.children('article');
+			$menu._lock = function() {
 
-				var	pos = 0,
-					leftLimit,
-					rightLimit,
-					itemWidth,
-					reelWidth,
-					timerId;
+				if ($menu._locked)
+					return false;
 
-				// Items.
-					if (settings.carousels.fadeIn) {
+				$menu._locked = true;
 
-						$items.addClass('loading');
+				window.setTimeout(function() {
+					$menu._locked = false;
+				}, 350);
 
-						$t.onVisible(function() {
-							var	timerId,
-								limit = $items.length - Math.ceil($window.width() / itemWidth);
+				return true;
 
-							timerId = window.setInterval(function() {
-								var x = $items.filter('.loading'), xf = x.first();
+			};
 
-								if (x.length <= limit) {
+			$menu._show = function() {
 
-									window.clearInterval(timerId);
-									$items.removeClass('loading');
-									return;
+				if ($menu._lock())
+					$body.addClass('is-menu-visible');
 
-								}
+			};
 
-								if (skel.vars.IEVersion < 10) {
+			$menu._hide = function() {
 
-									xf.fadeTo(750, 1.0);
-									window.setTimeout(function() {
-										xf.removeClass('loading');
-									}, 50);
+				if ($menu._lock())
+					$body.removeClass('is-menu-visible');
 
-								}
-								else
-									xf.removeClass('loading');
+			};
 
-							}, settings.carousels.fadeDelay);
-						}, 50);
-					}
+			$menu._toggle = function() {
 
-				// Main.
-					$t._update = function() {
-						pos = 0;
-						rightLimit = (-1 * reelWidth) + $window.width();
-						leftLimit = 0;
-						$t._updatePos();
-					};
+				if ($menu._lock())
+					$body.toggleClass('is-menu-visible');
 
-					if (skel.vars.IEVersion < 9)
-						$t._updatePos = function() { $reel.css('left', pos); };
-					else
-						$t._updatePos = function() { $reel.css('transform', 'translate(' + pos + 'px, 0)'); };
+			};
 
-				// Forward.
-					$forward
-						.appendTo($t)
-						.hide()
-						.mouseenter(function(e) {
-							timerId = window.setInterval(function() {
-								pos -= settings.carousels.speed;
+			$menu
+				.appendTo($body)
+				.on('click', function(event) {
 
-								if (pos <= rightLimit)
-								{
-									window.clearInterval(timerId);
-									pos = rightLimit;
-								}
+					event.stopPropagation();
 
-								$t._updatePos();
-							}, 10);
-						})
-						.mouseleave(function(e) {
-							window.clearInterval(timerId);
-						});
+					// Hide.
+						$menu._hide();
 
-				// Backward.
-					$backward
-						.appendTo($t)
-						.hide()
-						.mouseenter(function(e) {
-							timerId = window.setInterval(function() {
-								pos += settings.carousels.speed;
+				})
+				.find('.inner')
+					.on('click', '.close', function(event) {
 
-								if (pos >= leftLimit) {
+						event.preventDefault();
+						event.stopPropagation();
+						event.stopImmediatePropagation();
 
-									window.clearInterval(timerId);
-									pos = leftLimit;
+						// Hide.
+							$menu._hide();
 
-								}
+					})
+					.on('click', function(event) {
+						event.stopPropagation();
+					})
+					.on('click', 'a', function(event) {
 
-								$t._updatePos();
-							}, 10);
-						})
-						.mouseleave(function(e) {
-							window.clearInterval(timerId);
-						});
+						var href = $(this).attr('href');
 
-				// Init.
-					$window.load(function() {
+						event.preventDefault();
+						event.stopPropagation();
 
-						reelWidth = $reel[0].scrollWidth;
+						// Hide.
+							$menu._hide();
 
-						skel.on('change', function() {
-
-							if (skel.vars.mobile) {
-
-								$reel
-									.css('overflow-y', 'hidden')
-									.css('overflow-x', 'scroll')
-									.scrollLeft(0);
-								$forward.hide();
-								$backward.hide();
-
-							}
-							else {
-
-								$reel
-									.css('overflow', 'visible')
-									.scrollLeft(0);
-								$forward.show();
-								$backward.show();
-
-							}
-
-							$t._update();
-
-						});
-
-						$window.resize(function() {
-							reelWidth = $reel[0].scrollWidth;
-							$t._update();
-						}).trigger('resize');
+						// Redirect.
+							window.setTimeout(function() {
+								window.location.href = href;
+							}, 350);
 
 					});
 
-			});
+			$body
+				.on('click', 'a[href="#menu"]', function(event) {
+
+					event.stopPropagation();
+					event.preventDefault();
+
+					// Toggle.
+						$menu._toggle();
+
+				})
+				.on('keydown', function(event) {
+
+					// Hide on escape.
+						if (event.keyCode == 27)
+							$menu._hide();
+
+				});
 
 	});
 
